@@ -295,3 +295,95 @@ myLocation();
   }
   console.log('3. Executed no matter what');
 })();
+
+
+
+///////////////////////////////
+// Running Promises in Parallel
+///////////////////////////////
+
+const getJSON = (url, errorMsg ='Houston we may have a probolem') => {
+  return fetch(url).then(response => {
+    if(!response.ok) throw new Error(errorMsg)  
+    return response.json();
+  })
+}
+
+////////////////////////////////
+// Promise.all() - takes array of Promises
+// will run all Promises at the same time
+// if one Promise rejects, all chain of Promises reject
+// we use this in case of Multiple Promise operations at the same time
+// that don't depend each on other
+
+const get3Countries = async function(country1,country2,country3){
+  try{
+    const data = await Promise.all([
+      getJSON(`https://restcountries.com/v3.1/name/${country1}`),
+      getJSON(`https://restcountries.com/v3.1/name/${country2}`),
+      getJSON(`https://restcountries.com/v3.1/name/${country3}`)
+    ]);
+    console.log(data.map(d => d[0].capital));
+  }catch(err){ console.log(err)}
+}
+
+get3Countries('japan', 'mongolia', 'russia');
+
+
+/////////////////////////////
+// Promise Combinators
+// Promise.race
+/////////////////////////////
+// Promise.race
+// takes array of Promise
+// returns all settled (available) Promises, Resolved and Rejected
+// returns 1st, Fastest, result
+
+(async function (){
+  const res = await Promise.race(
+    [
+      getJSON(`https://restcountries.com/v3.1/name/czech`),
+      getJSON(`https://restcountries.com/v3.1/name/italy`),
+      getJSON(`https://restcountries.com/v3.1/name/mexico`),
+    ]
+  )
+  console.log(res[0])
+})()
+
+
+// Promise.race -> 2.example
+// this example is useful because Promise will reject if user has bad internet connection
+
+const timeout = function(sec){
+  return new Promise(function(_, reject){
+    setTimeout(()=>{
+      reject (new Error('Request took tooooo long!'))
+    }, sec)
+  })
+}
+
+Promise.race([
+  getJSON(`https://restcountries.com/v3.1/name/tajikistan`),
+  timeout(1)
+]).then(res => console.log(res[0])).catch(err => console.error(err));
+
+// Promise.allSettled([...])
+// takes array of Promise and returns array of all settled Promise
+// returns results of all Promise
+
+Promise.allSettled([
+  Promise.reject('Houston....'),
+  Promise.resolve('Success'),
+  Promise.resolve('Another one; bites the dust')
+]).then(res => console.log(res)).catch(err => console.log(err));
+
+
+// Promise.any([...])
+// takes array of Promises and returns array of FIRST resolved Promises
+// ignores Rejected Promises
+
+Promise.allSettled([
+  Promise.resolve('Success from any'),
+  Promise.reject('Houston.... this is ignored in Any'),
+  Promise.resolve('Another one; bites the dust in Promise.any')
+]).then(res => console.log(res)).catch(err => console.log(err));
